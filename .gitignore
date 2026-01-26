@@ -205,3 +205,20 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Python Boilerplate
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.env
+.venv
+
+# Script Outputs (Important!)
+stacked_geometries/
+
+# User Data (Optional: ignore input XYZ files to keep repo clean)
+# *.xyz
