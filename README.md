@@ -39,7 +39,13 @@ python stacker.py donor.xyz acceptor.xyz --z_dist 3.5
 python stacker.py molecule.xyz -n 3 --rot_step 15
 ```
 ## Options
-| Argument | Flag | Description | Default | | :--- | :--- | :--- | :--- | | input_files | (Positional) | List of .xyz files to stack. | Required | | num_layers | -n | Total number of molecules in the stack. | 2 | | z_dist | --z_dist | Vertical distance between layers (Å). | 6.0 | | x_dist | --x_dist | Horizontal offset between layers (Å). | 0.0 | | rot_step | --rot_step | Rotation interval in degrees. | 30 |
+| Argument | Flag | Description | Default | 
+| :--- | :--- | :--- | :--- | 
+| input_files | (Positional) | List of .xyz files to stack. | Required |
+| num_layers | -n | Total number of molecules in the stack. | 2 |
+| z_dist | --z_dist | Vertical distance between layers (Å). | 6.0 | 
+| x_dist | --x_dist | Horizontal offset between layers (Å). | 0.0 | 
+| rot_step | --rot_step | Rotation interval in degrees. | 30 |
 ## How It Works
 * **Centering:** The script calculates the centroid of the input atoms and translates the molecule to $(0,0,0)$. 
 * **Library Building:** All provided .xyz files are loaded into a library for combinatorial selection. 
