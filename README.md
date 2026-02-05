@@ -6,8 +6,9 @@ This script reads one or more molecular geometries (XYZ format), centers them, a
 * **Multi-Molecule Support:** If multiple input files are provided, the tool generates every possible molecular ordering (e.g., A-A, A-B, B-B). 
 * **Systematic Rotations:** Rotates units based on a user-defined interval (Default: 30°). 
 * **Flexible Displacement:** Stacks molecules with custom vertical ($Z$) and lateral ($X$) offsets.
-* * **Auto-Centering:** Automatically recenters the input molecule to the origin before stacking to ensure rotation consistency.
-## Prerequisites* Python 3.x * numpy 
+* **Auto-Centering:** Automatically recenters the input molecule to the origin before stacking to ensure rotation consistency.
+## Prerequisites
+* Python 3.x * numpy 
 ## Installation
 **Clone the repository:**
 ```bash 
