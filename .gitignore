@@ -222,3 +222,20 @@ stacked_geometries/
 
 # User Data (Optional: ignore input XYZ files to keep repo clean)
 # *.xyz
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.venv/
+venv/
+env/
+.env
+
+# Script Outputs
+stacked_geometries/
+
+# OS files
+.DS_Store
+Thumbs.db
