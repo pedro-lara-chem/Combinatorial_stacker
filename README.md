@@ -49,7 +49,7 @@ python stacker.py molecule.xyz -n 3 --rot_step 15
 ## How It Works
 * **Centering:** The script calculates the centroid of the input atoms and translates the molecule to $(0,0,0)$. 
 * **Library Building:** All provided .xyz files are loaded into a library for combinatorial selection. 
-* **Combinatorics:**  It calculates the Cartesian product of all possible rotation angles for the number of layers requested. * It calculates the Cartesian product of the molecular order (which molecule goes in which layer). 
+* **Combinatorics:**  It calculates the Cartesian product of all possible rotation angles for the number of layers requested.  It calculates the Cartesian product of the molecular order (which molecule goes in which layer). 
 * **Construction:** For each combination, layers are rotated around the Z-axis and translated according to their position in the stack. 
 * **Output:** Files are organized into sub-directories named after the molecular order (e.g., stacked_geometries/A-B-A/). 
 ## Acknowledgments
