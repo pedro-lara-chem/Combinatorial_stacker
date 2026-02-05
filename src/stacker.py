@@ -5,148 +5,170 @@ import argparse
 import sys
 
 class CombinatorialStacker:
-    def __init__(self, filepath):
-        self.atoms = []  # List of atomic symbols
-        self.base_coords = [] # Initial coordinates from file
-        self.filepath = os.path.abspath(filepath) # Store absolute path
-        self.read_xyz()
+    def __init__(self, filepaths):
+        # Library to store loaded molecules
+        self.molecule_library = [] 
         
-    def read_xyz(self):
-        """Reads a standard .xyz file and centers the molecule."""
-        if not os.path.exists(self.filepath):
-            print(f"Error: File not found at {self.filepath}")
-            sys.exit(1)
+        # Load all input files
+        for fp in filepaths:
+            self.add_molecule(fp)
+            
+    def add_molecule(self, filepath):
+        """Reads a standard .xyz file, centers it, and adds it to the library."""
+        abs_path = os.path.abspath(filepath)
+        filename = os.path.basename(abs_path).replace('.xyz', '')
+        
+        if not os.path.exists(abs_path):
+            print(f"Error: File not found at {abs_path}")
+            return 
 
-        with open(self.filepath, 'r') as f:
+        atoms = []
+        base_coords = []
+        
+        with open(abs_path, 'r') as f:
             lines = f.readlines()
-            # Basic validation for XYZ format
             if len(lines) < 3:
-                print("Error: Invalid XYZ file format (too short).")
-                sys.exit(1)
+                print(f"Warning: Skipping {filename} (Invalid format).")
+                return
 
             for line in lines[2:]:
                 parts = line.split()
                 if len(parts) >= 4:
-                    self.atoms.append(parts[0])
-                    # Store as floats
-                    self.base_coords.append([float(parts[1]), float(parts[2]), float(parts[3])])
+                    atoms.append(parts[0])
+                    base_coords.append([float(parts[1]), float(parts[2]), float(parts[3])])
         
-        self.base_coords = np.array(self.base_coords)
+        base_coords = np.array(base_coords)
         
-        # Center the molecule's geometric center (centroid) to (0,0,0)
-        if len(self.base_coords) > 0:
-            centroid = np.mean(self.base_coords, axis=0)
-            self.base_coords = self.base_coords - centroid
+        # Center the molecule
+        if len(base_coords) > 0:
+            centroid = np.mean(base_coords, axis=0)
+            base_coords = base_coords - centroid
+            
+            self.molecule_library.append({
+                'name': filename,
+                'atoms': atoms,
+                'coords': base_coords
+            })
+            print(f"Loaded: {filename} ({len(atoms)} atoms)")
         else:
-            print("Error: No atoms found in file.")
-            sys.exit(1)
+            print(f"Warning: No atoms found in {filename}.")
 
     def rotate_molecule(self, coords, angle_degrees):
-        """Rotates coordinates around the Z-axis (XY plane rotation)."""
+        """Rotates coordinates around the Z-axis."""
         theta = np.radians(angle_degrees)
         c, s = np.cos(theta), np.sin(theta)
-        
-        # Z-axis rotation matrix
-        Rz = np.array(((c, -s, 0), 
-                       (s, c, 0), 
-                       (0, 0, 1)))
-        
+        Rz = np.array(((c, -s, 0), (s, c, 0), (0, 0, 1)))
         return np.dot(coords, Rz)
 
-    def generate_combinations(self, num_copies):
+    def generate_combinations(self, num_layers, z_dist, x_dist, rot_step):
         """
-        Generates geometries based on combinatorial rotations and fixed displacements.
+        Generates geometries iterating over both MOLECULE ORDER and ROTATIONS.
+        Creates a separate sub-directory for each molecule order.
         """
-        if num_copies < 2:
-            print("Warning: Generating a stack with only 1 copy is just the original molecule.")
+        num_inputs = len(self.molecule_library)
+        if num_inputs == 0:
+            print("No valid molecules loaded. Exiting.")
+            sys.exit(1)
 
-        # Define parameters for the stack:
-        Z_DISPLACEMENT = 6.0 # Ångströms up (Z-axis) per copy
-        X_DISPLACEMENT = 5.0 # Ångströms sideways (X-axis) per copy
-        ROTATION_STEP = 30   # Degrees per step
+        # 1. Generate Rotation Combinations
+        rotation_angles = list(range(0, 360, rot_step))
+        rotation_combos = list(product(rotation_angles, repeat=num_layers))
 
-        # Generate all possible rotation angles (0, 30, 60, ..., 330)
-        rotation_angles = list(range(0, 360, ROTATION_STEP))
+        # 2. Generate Molecule Order Combinations
+        molecule_indices = list(range(num_inputs))
+        structure_combos = list(product(molecule_indices, repeat=num_layers))
+
+        total_files = len(rotation_combos) * len(structure_combos)
+        print(f"\n--- Calculation Details ---")
+        print(f"Layers in stack: {num_layers}")
+        print(f"Unique input molecules: {num_inputs}")
+        print(f"Total geometries to generate: {total_files}")
         
-        # Generate all combinations of rotations for N molecules
-        all_combinations = product(rotation_angles, repeat=num_copies)
-        
-        # Create output directory in the CURRENT WORKING DIRECTORY (where user runs the command)
+        if total_files > 10000:
+            confirm = input(f"Warning: This will generate {total_files} files. Continue? (y/n): ")
+            if confirm.lower() != 'y':
+                sys.exit(0)
+
+        # Base Output Directory
         cwd = os.getcwd()
-        output_dir = os.path.join(cwd, "stacked_geometries")
-        os.makedirs(output_dir, exist_ok=True)
+        base_output_dir = os.path.join(cwd, "stacked_geometries")
+        os.makedirs(base_output_dir, exist_ok=True)
         
-        print(f"Output directory: {output_dir}")
+        count = 0
         
-        num_generated = 0
+        # --- OUTER LOOP: MOLECULE ORDER ---
+        for mol_order_tuple in structure_combos:
+            # 1. Determine the folder name based on the molecules used (e.g., "A-A-B")
+            mol_names = [self.molecule_library[i]['name'] for i in mol_order_tuple]
+            order_str = "-".join(mol_names)
 
-        for rotation_tuple in all_combinations:
-            stacked_atoms = []
-            stacked_coords = []
-            
-            rotation_string = "_".join(map(str, rotation_tuple))
+            # 2. Create the specific directory for this combination
+            current_dir = os.path.join(base_output_dir, order_str)
+            os.makedirs(current_dir, exist_ok=True)
 
-            for i in range(num_copies):
-                angle = rotation_tuple[i] 
-                
-                # 1. Start with base coords
-                current_coords = self.base_coords.copy()
-                
-                # 2. Rotate
-                current_coords = self.rotate_molecule(current_coords, angle)
-                
-                # 3. Translate
-                translation = np.array([X_DISPLACEMENT * i, 
-                                        0.0, 
-                                        Z_DISPLACEMENT * i])
-                                        
-                current_coords = current_coords + translation
-                
-                stacked_atoms.extend(self.atoms)
-                stacked_coords.extend(current_coords)
-            
-            # Save
-            filename = os.path.join(output_dir, f"complex_rot_{rotation_string}.xyz")
-            self.save_xyz(filename, stacked_atoms, np.array(stacked_coords))
-            num_generated += 1
-            
-        print(f"Successfully generated {num_generated} geometries.")
+            # --- INNER LOOP: ROTATIONS ---
+            for rotation_tuple in rotation_combos:
+                final_atoms = []
+                final_coords = []
+                rot_str = "_".join(map(str, rotation_tuple))
 
+                for layer_idx in range(num_layers):
+                    # Get molecule data
+                    lib_index = mol_order_tuple[layer_idx]
+                    mol_data = self.molecule_library[lib_index]
+                    
+                    # Transform
+                    current_coords = mol_data['coords'].copy()
+                    angle = rotation_tuple[layer_idx]
+                    current_coords = self.rotate_molecule(current_coords, angle)
+                    
+                    translation = np.array([x_dist * layer_idx, 0.0, z_dist * layer_idx])
+                    current_coords = current_coords + translation
+                    
+                    final_atoms.extend(mol_data['atoms'])
+                    final_coords.extend(current_coords)
 
-    def save_xyz(self, filename, atoms, coords):
-        """Saves the final coordinates to an XYZ file."""
+                # Save File inside the specific directory
+                # Filename is shorter now: rot_0_30_60.xyz
+                fname = f"rot_{rot_str}.xyz"
+                full_path = os.path.join(current_dir, fname)
+                
+                self.save_xyz(full_path, final_atoms, np.array(final_coords), order_str)
+                count += 1
+                
+                if count % 1000 == 0:
+                    print(f"Generated {count} / {total_files}...")
+
+        print(f"Done. {count} files saved to {base_output_dir}")
+
+    def save_xyz(self, filename, atoms, coords, comment_info):
         with open(filename, 'w') as f:
             f.write(f"{len(atoms)}\n")
-            f.write(f"Generated by CombinatorialStacker - Rotations: {filename.split('_')[-1].split('.')[0]} deg\n")
+            f.write(f"Stack: {comment_info} | Generated by CombinatorialStacker\n")
             for atom, coord in zip(atoms, coords):
                 f.write(f"{atom:<4} {coord[0]:.6f} {coord[1]:.6f} {coord[2]:.6f}\n")
 
 # --- MAIN EXECUTION BLOCK ---
 if __name__ == "__main__":
-    # Initialize Argument Parser
-    parser = argparse.ArgumentParser(description="Generate combinatorial stacked geometries from an XYZ file.")
+    parser = argparse.ArgumentParser(description="Stack multiple molecular geometries with combinatorial ordering and rotations.")
     
-    # Arguments
-    parser.add_argument("input_file", help="Path to the input .xyz file")
-    parser.add_argument("-n", "--num_copies", type=int, default=2, help="Number of molecule copies to stack (default: 2)")
+    # Input files
+    parser.add_argument("input_files", nargs='+', help="List of .xyz files to stack")
     
-    # Parse arguments
+    # Parameters
+    parser.add_argument("-n", "--num_layers", type=int, default=2, help="Total height of the stack.")
+    parser.add_argument("--z_dist", type=float, default=6.0, help="Vertical distance (Angstroms).")
+    parser.add_argument("--x_dist", type=float, default=0.0, help="Horizontal offset (Angstroms).")
+    parser.add_argument("--rot_step", type=int, default=30, help="Rotation interval in degrees.")
+
     args = parser.parse_args()
 
-    # Run Logic
     try:
-        # Resolve the input path relative to where the user is
-        input_path = os.path.abspath(args.input_file)
-        print(f"Processing file: {input_path}")
-        
-        stacker = CombinatorialStacker(input_path)
-        print(f"Molecule loaded. {len(stacker.atoms)} atoms.")
-        print(f"Generating combinations for {args.num_copies} copies...")
-        
-        stacker.generate_combinations(args.num_copies)
+        stacker = CombinatorialStacker(args.input_files)
+        stacker.generate_combinations(args.num_layers, args.z_dist, args.x_dist, args.rot_step)
         
     except KeyboardInterrupt:
-        print("\nProcess interrupted by user.")
+        print("\nProcess interrupted.")
         sys.exit(0)
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
