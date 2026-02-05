@@ -13,7 +13,7 @@ numpy
 ## Installation
 **Clone the repository:**
 ```bash 
-git clone https://github.com/YOUR_USERNAME/molecular-stacker.git
+git clone https://github.com/pedro-lara-chem/Combinatorial_stacker.git
 cd molecular-stacker
 ```
 **Install dependencies:**
