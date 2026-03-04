@@ -14,7 +14,7 @@ numpy
 **Clone the repository:**
 ```bash 
 git clone https://github.com/pedro-lara-chem/Combinatorial_stacker.git
-cd molecular-stacker
+cd Combinatorial_stacker
 ```
 **Install dependencies:**
 ```bash
