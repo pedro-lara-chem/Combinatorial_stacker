@@ -53,4 +53,4 @@ python stacker.py molecule.xyz -n 3 --rot_step 15
 * **Construction:** For each combination, layers are rotated around the Z-axis and translated according to their position in the stack. 
 * **Output:** Files are organized into sub-directories named after the molecular order (e.g., stacked_geometries/A-B-A/). 
 ## Acknowledgments
-This software was developed by **Pedro Lara Salcedo at Excited States Reactivity Group** at **Universidad Autónoma de Madrid**.  This work was supported by **Diseño y caracterización de nuevos materiales moleculares y optimización de fármacos: Sinergia experimento y teoría$$** under grant number **$$PGC2018-094644-B-C21$$**.
+This software was developed by **Pedro Lara Salcedo at Excited States Reactivity Group** at **Universidad Autónoma de Madrid**.  This work was supported by **Diseño y caracterización de nuevos materiales moleculares y optimización de fármacos: Sinergia experimento y teoría** under grant number **$$PGC2018-094644-B-C21$$**.
